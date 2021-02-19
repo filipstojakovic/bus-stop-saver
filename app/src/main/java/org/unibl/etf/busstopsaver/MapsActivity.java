@@ -35,11 +35,7 @@ import java.util.stream.Collectors;
 
 public class MapsActivity extends FragmentActivity implements OnMapReadyCallback, LocationListener
 {
-    public static final String BUS_STOPS_TXT = "busstops.txc";
-    public static final String FOLDER = "/MyFolder/";
-
-    public static final String ROOT_PATH = Environment.getExternalStorageDirectory()
-            .getAbsolutePath() + FOLDER;
+    public static final String BUS_STOPS_TXT = "busstops.txt";
 
     private TextView textView;
     private EditText editText;
@@ -156,9 +152,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         LocationManager locationManager = null;
 
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION)
-                == PackageManager.PERMISSION_GRANTED &&
-                ActivityCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE)
-                        == PackageManager.PERMISSION_GRANTED)
+                == PackageManager.PERMISSION_GRANTED)
         {
             locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
             if (!locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER))
@@ -170,9 +164,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         {
             ActivityCompat.requestPermissions(this,
                     new String[]{Manifest.permission.ACCESS_COARSE_LOCATION,
-                            Manifest.permission.ACCESS_FINE_LOCATION,
-                            Manifest.permission.WRITE_EXTERNAL_STORAGE,
-                            Manifest.permission.READ_EXTERNAL_STORAGE
+                            Manifest.permission.ACCESS_FINE_LOCATION
                     },
                     1);
         }
@@ -181,32 +173,31 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
     private void restoreMarkerState()
     {
-        File file = new File(ROOT_PATH + BUS_STOPS_TXT);
 
-        if (file.exists())
-            try (FileInputStream fileOut = new FileInputStream(file);
-                 ObjectInputStream out = new ObjectInputStream(fileOut))
-            {
-                List<BusStop> busStopList = (ArrayList) out.readObject();
+        try (FileInputStream fileOut = openFileInput(BUS_STOPS_TXT);
+             //                    FileInputStream fileOut = new FileInputStream(file);
+             ObjectInputStream out = new ObjectInputStream(fileOut))
+        {
+            List<BusStop> busStopList = (ArrayList) out.readObject();
 
-                if (busStopList != null && !busStopList.isEmpty())
-                    busStopMarkers = busStopList.stream()
-                            .map(x -> map.addMarker(new MarkerOptions()
-                                    .position(new LatLng(x.getLat(), x.getLng()))
-                                    .title(x.getName())))
-                            .collect(Collectors.toList());
+            if (busStopList != null && !busStopList.isEmpty())
+                busStopMarkers = busStopList.stream()
+                        .map(x -> map.addMarker(new MarkerOptions()
+                                .position(new LatLng(x.getLat(), x.getLng()))
+                                .title(x.getName())))
+                        .collect(Collectors.toList());
 
-            } catch (Exception ex)
-            {
-                ex.printStackTrace();
-            }
+        } catch (Exception ex)
+        {
+//            ex.printStackTrace();
+        }
     }
 
     private void saveMarkerState()
     {
-        File file = makeRootDirAndFile();
-        if (busStopMarkers != null && !busStopMarkers.isEmpty())
-            try (FileOutputStream fileOut = new FileOutputStream(file);
+        if (busStopMarkers != null)
+            try (FileOutputStream fileOut = openFileOutput(BUS_STOPS_TXT, Context.MODE_PRIVATE);
+                 //                    FileOutputStream fileOut = new FileOutputStream(file);
                  ObjectOutputStream out = new ObjectOutputStream(fileOut))
             {
                 List<BusStop> busStopList = busStopMarkers.stream()
@@ -219,29 +210,6 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 ex.printStackTrace();
             }
 
-    }
-
-    private File makeRootDirAndFile()
-    {
-        File rootDir = new File(ROOT_PATH);
-        if (!rootDir.exists())
-        {
-            rootDir.mkdirs();
-        }
-        File file = new File(ROOT_PATH + BUS_STOPS_TXT);
-        if (file.exists())
-        {
-            file.delete();
-        }
-        try
-        {
-            file.createNewFile();
-
-        } catch (Exception ex)
-        {
-            ex.printStackTrace();
-        }
-        return file;
     }
 
     @Override
