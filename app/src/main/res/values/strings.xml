@@ -1,0 +1,4 @@
+<resources>
+    <string name="app_name">Bus Stop Saver</string>
+    <string name="title_activity_maps">Map</string>
+</resources>
