@@ -6,15 +6,21 @@ import androidx.fragment.app.FragmentActivity;
 
 import android.Manifest;
 import android.app.Activity;
+import android.app.DownloadManager;
+import android.content.BroadcastReceiver;
 import android.content.Context;
+import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
+import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
 import android.widget.EditText;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
@@ -24,10 +30,17 @@ import com.google.android.gms.maps.model.BitmapDescriptor;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
+
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -64,10 +77,60 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
         busStopMarkers = new ArrayList<>();
 
+        //TODO: implement method to check if there was an update
+        //TODO: if(needUpdate)
+//        update("https://github.com/filipstojakovic/bus-stop-saver/releases/download/0.0.0.1/app-debug.apk");
+
         currentPositionIcon = Util.bitmapDescriptorFromVector(this, R.drawable.ic_baseline_location_on_24);
 
         SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager().findFragmentById(R.id.map);
         mapFragment.getMapAsync(this);
+    }
+
+    //need WRITE_EXTERNAL_STORAGE permission
+    public void update(String apkurl)
+    {
+        String destination = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS) + File.separator;
+        String fileName = "AppName.apk";
+        destination += fileName;
+        final Uri uri = Uri.parse("file://" + destination);
+
+        //Delete update file if exists
+        File file = new File(destination);
+        if (file.exists())
+            //file.delete() - test this, I think sometimes it doesnt work
+            file.delete();
+
+        //set downloadmanager
+        DownloadManager.Request request = new DownloadManager.Request(Uri.parse(apkurl));
+        request.setDescription("Description");
+        request.setTitle("Title");
+
+        //set destination
+        request.setDestinationUri(uri);
+
+        // get download service and enqueue file
+        final DownloadManager manager = (DownloadManager) getSystemService(Context.DOWNLOAD_SERVICE);
+        final long downloadId = manager.enqueue(request);
+
+        //set BroadcastReceiver to install app when .apk is downloaded
+        BroadcastReceiver onComplete = new BroadcastReceiver()
+        {
+            public void onReceive(Context ctxt, Intent intent)
+            {
+                Intent install = new Intent(Intent.ACTION_VIEW);
+                install.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
+                install.setDataAndType(uri,
+                        manager.getMimeTypeForDownloadedFile(downloadId));
+                startActivity(install);
+
+                unregisterReceiver(this);
+                finish();
+                //TODO: maybe delete downloaded .apk after finish
+            }
+        };
+        //register receiver for when .apk download is compete
+        registerReceiver(onComplete, new IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE));
     }
 
 
