@@ -5,6 +5,7 @@ import androidx.core.app.ActivityCompat;
 import androidx.fragment.app.FragmentActivity;
 
 import android.Manifest;
+import android.app.Activity;
 import android.content.Context;
 import android.content.pm.PackageManager;
 import android.location.Location;
@@ -15,6 +16,9 @@ import android.os.Environment;
 import android.widget.EditText;
 import android.widget.TextView;
 
+import com.github.javiersantos.appupdater.AppUpdater;
+import com.github.javiersantos.appupdater.enums.Display;
+import com.github.javiersantos.appupdater.enums.UpdateFrom;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
@@ -60,6 +64,8 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         editText = findViewById(R.id.edit_text);
         editText.clearFocus();
 
+        initAppUpdate(this);
+
         findViewById(R.id.delete_all).setOnClickListener(l -> deleteAll());
         findViewById(R.id.delete_last).setOnClickListener(l -> deleteLast());
 
@@ -69,6 +75,14 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
         SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager().findFragmentById(R.id.map);
         mapFragment.getMapAsync(this);
+    }
+
+    private void initAppUpdate(Activity activity)
+    {
+//        AppUpdater appUpdater = new AppUpdater(this);
+//        appUpdater.setDisplay(Display.DIALOG)
+//                .setUpdateJSON("")
+//            .start();
     }
 
     @Override

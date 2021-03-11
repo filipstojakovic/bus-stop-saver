@@ -16,6 +16,7 @@
             app:layout_constraintBottom_toBottomOf="parent"
             android:id="@+id/linearLayout">
 
+
         <TextView
                 android:text="Location..."
                 android:layout_width="429dp"
