@@ -1,6 +1,10 @@
 {
-  "latestVersion": "v1.0.1",
+  "latestVersion": "0.0.0.2",
   "latestVersionCode": 2,
-  "url": "https://github.com/filipstojakovic/bus-stop-saver/raw/master/apk/app.apk",
-  "updateMessage":"Nova verzija. Updejtuj?"
+  "url": "https://github.com/filipstojakovic/bus-stop-saver/releases",
+  "releaseNotes": [
+    "- First evolution",
+    "- Second evolution",
+    "- Bug fixes"
+  ]
 }

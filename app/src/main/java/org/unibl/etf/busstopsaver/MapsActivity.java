@@ -80,11 +80,14 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
     private void initAppUpdate(Activity activity)
     {
-        UpdateChecker.checkForDialog(MapsActivity.this);
-//        AppUpdater appUpdater = new AppUpdater(this);
-//        appUpdater.setDisplay(Display.DIALOG)
-//                .setUpdateJSON("https://raw.githubusercontent.com/filipstojakovic/bus-stop-saver/master/updateinfo.json")
-//                .start();
+
+        //        UpdateChecker.checkForDialog(MapsActivity.this);
+
+        AppUpdater appUpdater = new AppUpdater(this)
+                .setDisplay(Display.DIALOG)
+                .setUpdateFrom(UpdateFrom.JSON)
+                .setUpdateJSON("https://raw.githubusercontent.com/filipstojakovic/bus-stop-saver/master/updateinfo.json");
+        appUpdater.start();
     }
 
     @Override
