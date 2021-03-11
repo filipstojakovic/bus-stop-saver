@@ -79,10 +79,10 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
     private void initAppUpdate(Activity activity)
     {
-//        AppUpdater appUpdater = new AppUpdater(this);
-//        appUpdater.setDisplay(Display.DIALOG)
-//                .setUpdateJSON("")
-//            .start();
+        AppUpdater appUpdater = new AppUpdater(this);
+        appUpdater.setDisplay(Display.DIALOG)
+                .setUpdateJSON("https://raw.githubusercontent.com/filipstojakovic/bus-stop-saver/master/updateinfo.json")
+                .start();
     }
 
     @Override
@@ -203,7 +203,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
         } catch (Exception ex)
         {
-//            ex.printStackTrace();
+            //            ex.printStackTrace();
         }
     }
 
