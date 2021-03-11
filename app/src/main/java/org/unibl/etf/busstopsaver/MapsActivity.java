@@ -27,9 +27,6 @@ import com.google.android.gms.maps.model.BitmapDescriptor;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
-import com.loveplusplus.update.UpdateChecker;
-
-import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.ObjectInputStream;
@@ -65,8 +62,6 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         editText = findViewById(R.id.edit_text);
         editText.clearFocus();
 
-        initAppUpdate(this);
-
         findViewById(R.id.delete_all).setOnClickListener(l -> deleteAll());
         findViewById(R.id.delete_last).setOnClickListener(l -> deleteLast());
 
@@ -78,17 +73,6 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         mapFragment.getMapAsync(this);
     }
 
-    private void initAppUpdate(Activity activity)
-    {
-
-        //        UpdateChecker.checkForDialog(MapsActivity.this);
-
-        AppUpdater appUpdater = new AppUpdater(this)
-                .setDisplay(Display.DIALOG)
-                .setUpdateFrom(UpdateFrom.JSON)
-                .setUpdateJSON("https://raw.githubusercontent.com/filipstojakovic/bus-stop-saver/master/updateinfo.json");
-        appUpdater.start();
-    }
 
     @Override
     public void onMapReady(GoogleMap googleMap)
