@@ -27,6 +27,7 @@ import com.google.android.gms.maps.model.BitmapDescriptor;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
+import com.loveplusplus.update.UpdateChecker;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -79,10 +80,11 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
     private void initAppUpdate(Activity activity)
     {
-        AppUpdater appUpdater = new AppUpdater(this);
-        appUpdater.setDisplay(Display.DIALOG)
-                .setUpdateJSON("https://raw.githubusercontent.com/filipstojakovic/bus-stop-saver/master/updateinfo.json")
-                .start();
+        UpdateChecker.checkForDialog(MapsActivity.this);
+//        AppUpdater appUpdater = new AppUpdater(this);
+//        appUpdater.setDisplay(Display.DIALOG)
+//                .setUpdateJSON("https://raw.githubusercontent.com/filipstojakovic/bus-stop-saver/master/updateinfo.json")
+//                .start();
     }
 
     @Override

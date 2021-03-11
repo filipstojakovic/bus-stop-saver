@@ -46,4 +46,8 @@ dependencies {
     //update app
     implementation 'com.github.javiersantos:AppUpdater:2.7'
 
+    //kinez
+    implementation 'com.github.feicien:android-auto-update:1.2'
+
+
 }
