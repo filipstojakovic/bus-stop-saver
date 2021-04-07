@@ -18,6 +18,7 @@ import android.location.LocationManager;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
+import android.view.KeyEvent;
 import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -31,6 +32,7 @@ import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 
+import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -38,6 +40,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.io.PrintWriter;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.file.Files;
@@ -47,7 +50,9 @@ import java.util.stream.Collectors;
 
 public class MapsActivity extends FragmentActivity implements OnMapReadyCallback, LocationListener
 {
-    public static final String BUS_STOPS_TXT = "busstops.txt";
+    public static final String BUS_STOPS_SER = "busstops.ser";
+    public static final String BUS_STOPS_TXT = "busstops_json.txt";
+
 
     private TextView textView;
     private EditText editText;
@@ -68,9 +73,16 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         // Obtain the SupportMapFragment and get notified when the map is ready to be used.
         textView = findViewById(R.id.textView);
         findViewById(R.id.save_btn).setOnClickListener(l -> onSaveBtnClicked());
-        findViewById(R.id.refresh_btn).setOnClickListener(l -> initLocationListener());
+        findViewById(R.id.save_file_btn).setOnClickListener(l -> saveToFile());
         editText = findViewById(R.id.edit_text);
+        editText.setOnEditorActionListener((v, actionId, event) ->
+        {
+            editText.clearFocus();
+            Util.hideKeyboard(v);
+            return true;
+        });
         editText.clearFocus();
+
 
         findViewById(R.id.delete_all).setOnClickListener(l -> deleteAll());
         findViewById(R.id.delete_last).setOnClickListener(l -> deleteLast());
@@ -79,7 +91,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
         //TODO: implement method to check if there was an update
         //TODO: if(needUpdate)
-//        update("https://github.com/filipstojakovic/bus-stop-saver/releases/download/0.0.0.1/app-debug.apk");
+        //        update("https://github.com/filipstojakovic/bus-stop-saver/releases/download/0.0.0.1/app-debug.apk");
 
         currentPositionIcon = Util.bitmapDescriptorFromVector(this, R.drawable.ic_baseline_location_on_24);
 
@@ -148,12 +160,20 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             return false;
         });
         map.setOnMapClickListener(latLng -> Util.hideKeyboard(this));
+        map.setOnMapLongClickListener(latLng ->
+        {
+            String name = editText.getText().toString();
+            addMarker(name, latLng);
+            editText.getText().clear();
+        });
     }
 
     private void addMarker(String title, LatLng latLng)
     {
         if (map != null)
         {
+            if (title == null)
+                title = "";
             busStopMarkers.add(map.addMarker(new MarkerOptions().position(latLng).title(title)));
         }
     }
@@ -234,10 +254,26 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
     }
 
+    private void saveMarkerState()
+    {
+        if (busStopMarkers != null)
+            try (FileOutputStream fileOut = openFileOutput(BUS_STOPS_SER, Context.MODE_PRIVATE);
+                 //                    FileOutputStream fileOut = new FileOutputStream(file);
+                 ObjectOutputStream out = new ObjectOutputStream(fileOut))
+            {
+                List<BusStop> busStopList = getBusStopList();
+                out.writeObject(busStopList);
+
+            } catch (Exception ex)
+            {
+                ex.printStackTrace();
+            }
+    }
+
     private void restoreMarkerState()
     {
 
-        try (FileInputStream fileOut = openFileInput(BUS_STOPS_TXT);
+        try (FileInputStream fileOut = openFileInput(BUS_STOPS_SER);
              //                    FileInputStream fileOut = new FileInputStream(file);
              ObjectInputStream out = new ObjectInputStream(fileOut))
         {
@@ -256,23 +292,31 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         }
     }
 
-    private void saveMarkerState()
+    private void saveToFile()
     {
         if (busStopMarkers != null)
-            try (FileOutputStream fileOut = openFileOutput(BUS_STOPS_TXT, Context.MODE_PRIVATE);
-                 //                    FileOutputStream fileOut = new FileOutputStream(file);
-                 ObjectOutputStream out = new ObjectOutputStream(fileOut))
+        {
+            try (PrintWriter pw = new PrintWriter(openFileOutput(BUS_STOPS_TXT, Context.MODE_PRIVATE)))
             {
-                List<BusStop> busStopList = busStopMarkers.stream()
-                        .map(x -> new BusStop(x.getTitle(), x.getPosition()))
-                        .collect(Collectors.toList());
-                out.writeObject(busStopList);
+                List<BusStop> busStopList = getBusStopList();
+                busStopList.stream().forEach(x ->
+                {
+                    pw.println(x);
+                });
 
             } catch (Exception ex)
             {
                 ex.printStackTrace();
             }
+        }
+    }
 
+
+    private List<BusStop> getBusStopList()
+    {
+        return busStopMarkers.stream()
+                .map(x -> new BusStop(x.getTitle(), x.getPosition()))
+                .collect(Collectors.toList());
     }
 
     @Override

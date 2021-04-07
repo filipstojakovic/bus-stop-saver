@@ -16,6 +16,8 @@ public class BusStop implements Serializable
 
     public BusStop(String name, LatLng location)
     {
+        if (name == null)
+            name = "";
         this.name = name;
         lat = location.latitude;
         lng = location.longitude;
@@ -54,8 +56,8 @@ public class BusStop implements Serializable
     @Override
     public String toString()
     {
-        return "name= " + name
-                + ", location= "
-                + lat + "," + lng;
+        return "description: \"" + name+"\""
+                + ", lat: " + lat
+                + ", lng:" + lng;
     }
 }
