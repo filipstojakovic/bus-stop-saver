@@ -5,7 +5,6 @@ import androidx.core.app.ActivityCompat;
 import androidx.fragment.app.FragmentActivity;
 
 import android.Manifest;
-import android.app.Activity;
 import android.app.DownloadManager;
 import android.content.BroadcastReceiver;
 import android.content.Context;
@@ -18,11 +17,12 @@ import android.location.LocationManager;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
-import android.view.KeyEvent;
 import android.widget.EditText;
 import android.widget.TextView;
-import android.widget.Toast;
 
+import com.google.android.gms.ads.AdRequest;
+import com.google.android.gms.ads.AdView;
+import com.google.android.gms.ads.MobileAds;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
@@ -31,19 +31,15 @@ import com.google.android.gms.maps.model.BitmapDescriptor;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 
-import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.PrintWriter;
-import java.net.HttpURLConnection;
-import java.net.URL;
-import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -52,7 +48,6 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 {
     public static final String BUS_STOPS_SER = "busstops.ser";
     public static final String BUS_STOPS_TXT = "busstops_json.txt";
-
 
     private TextView textView;
     private EditText editText;
@@ -70,10 +65,16 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_maps);
+
+        MobileAds.initialize(this);
+        AdView adView = findViewById(R.id.adView);
+        AdRequest adRequest = new AdRequest.Builder().build();
+        adView.loadAd(adRequest);
+
         // Obtain the SupportMapFragment and get notified when the map is ready to be used.
         textView = findViewById(R.id.textView);
         findViewById(R.id.save_btn).setOnClickListener(l -> onSaveBtnClicked());
-        findViewById(R.id.save_file_btn).setOnClickListener(l -> saveToFile());
+        findViewById(R.id.save_file_btn).setOnClickListener(l -> saveJsonToFile());
         editText = findViewById(R.id.edit_text);
         editText.setOnEditorActionListener((v, actionId, event) ->
         {
@@ -83,9 +84,9 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         });
         editText.clearFocus();
 
-
         findViewById(R.id.delete_all).setOnClickListener(l -> deleteAll());
         findViewById(R.id.delete_last).setOnClickListener(l -> deleteLast());
+        findViewById(R.id.share_fab).setOnClickListener(l -> shareConrent(this));
 
         busStopMarkers = new ArrayList<>();
 
@@ -93,10 +94,30 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         //TODO: if(needUpdate)
         //        update("https://github.com/filipstojakovic/bus-stop-saver/releases/download/0.0.0.1/app-debug.apk");
 
-        currentPositionIcon = Util.bitmapDescriptorFromVector(this, R.drawable.ic_baseline_location_on_24);
-
         SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager().findFragmentById(R.id.map);
         mapFragment.getMapAsync(this);
+    }
+
+    public void shareConrent(Context context)
+    {
+        List<BusStop> busStopList = getBusStopList();
+        if (busStopList == null || busStopList.isEmpty())
+            return;
+
+        Gson gson = new GsonBuilder()
+                .setPrettyPrinting()
+                .create();
+        String busStopJson = gson.toJson(busStopList);
+        shareIntent(busStopJson, context);
+    }
+
+    public void shareIntent(String content, Context context)
+    {
+        Intent shareIntent = new Intent(Intent.ACTION_SEND);
+        shareIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        shareIntent.setType("text/plain");
+        shareIntent.putExtra(Intent.EXTRA_TEXT, content);
+        context.startActivity(Intent.createChooser(shareIntent, "Share using:"));
     }
 
     //need WRITE_EXTERNAL_STORAGE permission
@@ -150,7 +171,8 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     public void onMapReady(GoogleMap googleMap)
     {
         map = googleMap;
-        restoreMarkerState();
+        currentPositionIcon = Util.bitmapDescriptorFromVector(this, R.drawable.ic_baseline_location_on_24);
+        deserializeMarkerState();
 
         LatLng trgBL = new LatLng(44.7691468567798, 17.18835644423962);
         map.moveCamera(CameraUpdateFactory.newLatLngZoom(trgBL, 16.0f));
@@ -254,11 +276,10 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
     }
 
-    private void saveMarkerState()
+    private void serializeMarkerState()
     {
         if (busStopMarkers != null)
             try (FileOutputStream fileOut = openFileOutput(BUS_STOPS_SER, Context.MODE_PRIVATE);
-                 //                    FileOutputStream fileOut = new FileOutputStream(file);
                  ObjectOutputStream out = new ObjectOutputStream(fileOut))
             {
                 List<BusStop> busStopList = getBusStopList();
@@ -270,11 +291,10 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             }
     }
 
-    private void restoreMarkerState()
+    private void deserializeMarkerState()
     {
 
         try (FileInputStream fileOut = openFileInput(BUS_STOPS_SER);
-             //                    FileInputStream fileOut = new FileInputStream(file);
              ObjectInputStream out = new ObjectInputStream(fileOut))
         {
             List<BusStop> busStopList = (ArrayList) out.readObject();
@@ -288,21 +308,21 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
         } catch (Exception ex)
         {
-            //            ex.printStackTrace();
+            ex.printStackTrace();
         }
     }
 
-    private void saveToFile()
+    private void saveJsonToFile()
     {
         if (busStopMarkers != null)
         {
             try (PrintWriter pw = new PrintWriter(openFileOutput(BUS_STOPS_TXT, Context.MODE_PRIVATE)))
             {
                 List<BusStop> busStopList = getBusStopList();
-                busStopList.stream().forEach(x ->
-                {
-                    pw.println(x);
-                });
+                Gson gson = new GsonBuilder()
+                        .setPrettyPrinting()
+                        .create();
+                gson.toJson(busStopList, pw);
 
             } catch (Exception ex)
             {
@@ -329,7 +349,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     @Override
     protected void onStop()
     {
-        saveMarkerState();
+        serializeMarkerState();
         super.onStop();
     }
 
